@@ -238,13 +238,13 @@ import {
   getTaskFromList,
   getUserName
 } from '../services/utils';
+import BpmnViewer from 'bpmn-js';
 import CamundaRest from '../services/camunda-rest';
 import DatePicker from 'vue2-datepicker'
 import ExpandContract from './addons/ExpandContract.vue'
 import { Form } from 'vue-formio';
 import Header from './layout/Header.vue'
 import LeftSider from './layout/LeftSider.vue'
-import BpmnViewer from 'bpmn-js';
 import {Payload} from '../services/TasklistTypes';
 import SocketIOService from '../services/SocketIOServices';
 import TaskHistory from '../components/TaskHistory.vue';
@@ -418,6 +418,7 @@ addGroup() {
     this.setGroup = null;
   });
 }
+
 async getGroupDetails() {
   const grouplist = await CamundaRest.getTaskGroupByID(this.token, this.task.id, this.bpmApiUrl);
   this.groupList = grouplist.data;
@@ -430,6 +431,7 @@ async getGroupDetails() {
     this.groupListNames = this.groupListItems;
   }
 }
+
 deleteGroup(groupid: string) {		 
   CamundaRest.deleteTaskGroupByID(this.token, this.task.id, this.bpmApiUrl, {
     groupId: groupid,
@@ -547,7 +549,7 @@ getTaskProcessDiagramDetails(task: any) {
       container: '#canvas'
     });
     try {
-      const { warnings } = await viewer.importXML(this.xmlData);
+      await viewer.importXML(this.xmlData);
     } catch (err) {
       console.error('error rendering process diagram', err);
     }
@@ -575,21 +577,15 @@ getTaskProcessDiagramDetails(task: any) {
     this.fetchPaginatedTaskList(this.selectedfilterId, this.payload, (this.getFormsFlowTaskCurrentPage-1)*this.perPage, this.perPage);
   }
 
-  onClaim() {
-    CamundaRest.claim(
+  async onClaim() {
+    await CamundaRest.claim(
       this.token,
       this.task.id,
       { userId: this.userName },
       this.bpmApiUrl
     )
-      .then(() => {
-        this.task.assignee = this.userName;
-        this.reloadCurrentTask();
-        this.$root.$emit('call-fetchData', {selectedTaskId: this.getFormsFlowTaskId})
-      })
-      .catch((error) => {
-        console.error("Error", error);
-      });
+    await CamundaRest.getTaskById(this.token, this.getFormsFlowTaskId, this.bpmApiUrl)
+    this.reloadCurrentTask();
     this.editAssignee = false;
   }
 
@@ -603,17 +599,12 @@ getTaskProcessDiagramDetails(task: any) {
       });
   }
 
-  onSetassignee() {
-    CamundaRest.setassignee(this.token, this.task.id,
+  async onSetassignee() {
+    await CamundaRest.setassignee(this.token, this.task.id,
       {"userId": this.userSelected?.code },
       this.bpmApiUrl)
-      .then(() => {
-        this.reloadCurrentTask()
-        this.$root.$emit('call-fetchData', {selectedTaskId: this.getFormsFlowTaskId})
-      })
-      .catch((error) => {
-        console.error("Error", error);
-      })
+    await CamundaRest.getTaskById(this.token, this.getFormsFlowTaskId, this.bpmApiUrl)
+    this.reloadCurrentTask();
     this.toggleassignee();
   }
 
@@ -769,22 +760,25 @@ getTaskProcessDiagramDetails(task: any) {
     SocketIOService.connect(this.webSocketEncryptkey, (refreshedTaskId: any, eventName: any)=> {
       if(this.selectedfilterId){
         this.fetchPaginatedTaskList(this.selectedfilterId, this.payload, (this.getFormsFlowTaskCurrentPage-1)*this.perPage, this.perPage);
-        this.fetchTaskData(this.getFormsFlowTaskId);
+        // this.fetchTaskData(this.getFormsFlowTaskId);
+        console.log("This here>>>>>")
         if (eventName === "create") {
           this.$root.$emit('call-pagination')
+          console.log("?????>>Entered here")
           this.fetchTaskList(this.selectedfilterId, this.payload);
         }
       }
       if((this.getFormsFlowTaskId) && (refreshedTaskId===this.getFormsFlowTaskId)){
-        this.fetchTaskData(this.getFormsFlowTaskId);
+        // this.fetchTaskData(this.getFormsFlowTaskId);
         this.reloadCurrentTask();
+        console.log("?????<<<<<Entered here")
       } 
     })
 
     CamundaRest.getUsers(this.token, this.bpmApiUrl).then((response) => {
       this.autoUserList = []
       response.data.forEach((element: any) => {
-         this.autoUserList.push({ "code" : element.id, "label" : element.email })
+        this.autoUserList.push({ "code" : element.id, "label" : element.email })
          
       });
     });
@@ -802,7 +796,7 @@ getTaskProcessDiagramDetails(task: any) {
     CamundaRest.getUsersByEmail(this.token, this.bpmApiUrl, search).then((response) => {
       this.autoUserList = []
       response.data.forEach((element: any) => {
-         this.autoUserList.push({ "code" : element.id, "label" : element.email })
+        this.autoUserList.push({ "code" : element.id, "label" : element.email })
          
       });
     });
