@@ -304,7 +304,7 @@ import BpmnViewer from "bpmn-js";
 import CamundaRest from "../services/camunda-rest";
 import DatePicker from "vue2-datepicker";
 import ExpandContract from "./addons/ExpandContract.vue";
-import { Form } from "vue-formio";
+import { Form, Formio } from "vue-formio";
 import Header from "./layout/Header.vue";
 import LeftSider from "./layout/LeftSider.vue";
 import { Payload } from "../services/TasklistTypes";
@@ -312,7 +312,7 @@ import SocketIOService from "../services/SocketIOServices";
 import TaskHistory from "../components/TaskHistory.vue";
 import TaskListMixin from "./mixins/TaskListMixin.vue";
 import { authenticateFormio } from "../services/formio-token";
-import { getFormDetails } from "../services/get-formio";
+import { getFormDetails, getFormIdandSubmissionId } from "../services/get-formio";
 import { getISODateTime } from "../services/format-time";
 import { getformHistoryApi } from "../services/formsflowai-api";
 import moment from "moment";
@@ -569,6 +569,9 @@ export default class Tasklist extends Mixins(TaskListMixin) {
     case "reloadCurrentTask":
       this.reloadCurrentTask();
       break;
+    case "saveAsDraft":
+      this.saveDraft(customEvent.data);
+      break;
     }
   };
 
@@ -590,6 +593,21 @@ export default class Tasklist extends Mixins(TaskListMixin) {
       (this.getFormsFlowTaskCurrentPage - 1) * this.perPage,
       this.perPage
     );
+  }
+
+  saveDraft(data: any) {
+    console.log(data);
+    console.log(this.formioUrl);
+    if(this.formioUrl) {
+    
+    const {formId, submissionId} = getFormIdandSubmissionId(this.formioUrl); //utils to get submission id and form
+    if(formId && submissionId) {
+      const submission = {_id: submissionId, data: data}
+      console.log(submission)
+      //axios.put(	https://forms3.aot-technologies.com/form/60d1e83a724d83d088c69708/submission/60d1ece8724d83db6ac69713) with submission_id
+      //axios.get(	https://forms3.aot-technologies.com/form/60d1e83a724d83d088c69708/submission/60d1ece8724d83db6ac69713)
+      }    
+    }
   }
 
   onClaim () {
