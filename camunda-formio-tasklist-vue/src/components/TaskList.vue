@@ -568,6 +568,10 @@ export default class Tasklist extends Mixins(TaskListMixin) {
       break;
     case "reloadCurrentTask":
       this.reloadCurrentTask();
+      const response = fetch(this.formioUrl, {"method": "get", "headers": new Headers({"x-jwt-token": localStorage.getItem("formioToken")})}).then(response => response.json())
+      const formio = new Formio(this.formioUrl);
+      const submission = {_id: this.submissionId, data: response}
+      formio.saveSubmission(submission);
       break;
     case "saveAsDraft":
       this.saveDraft(customEvent.data);
@@ -593,10 +597,6 @@ export default class Tasklist extends Mixins(TaskListMixin) {
       (this.getFormsFlowTaskCurrentPage - 1) * this.perPage,
       this.perPage
     );
-    const response = fetch(this.formioUrl, {"method": "get", "headers": new Headers({"x-jwt-token": localStorage.getItem("formioToken")})}).then(response => response.json())
-    const formio = new Formio(this.formioUrl);
-    const submission = {_id: this.submissionId, data: response}
-    formio.saveSubmission(submission);
   }
 
   saveDraft(data: any) {
